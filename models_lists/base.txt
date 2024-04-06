@@ -1,0 +1,8 @@
+resnet18.tv_in1k
+resnet34.tv_in1k
+resnet50.tv_in1k
+resnet101.tv_in1k
+vit_base_patch16_224.augreg_in21k_ft_in1k
+vit_large_patch16_224.augreg_in21k_ft_in1k
+vit_small_patch16_224.augreg_in21k_ft_in1k
+vit_tiny_patch16_224.augreg_in21k_ft_in1k

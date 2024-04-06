@@ -1,0 +1,7 @@
+CLIP_finetuned_RN50x4
+CLIP_finetuned_RN50x16
+CLIP_finetuned_RN50x64
+CLIP_finetuned_RN101
+CLIP_finetuned_ViT-B~16
+CLIP_finetuned_ViT-L~14
+CLIP_finetuned_ViT-L~14@336px
