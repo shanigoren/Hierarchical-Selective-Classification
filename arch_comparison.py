@@ -46,17 +46,17 @@ parser.add_argument('--data_dir', metavar='DIR',
 parser.add_argument('-b', '--batch-size', default=1, type=int,
                     metavar='N',
                     help='mini-batch size')
-parser.add_argument('-lli', '--low_limit', default=30, type=int,
+parser.add_argument('-lli', '--low_limit', default=None, type=int,
                     metavar='N',
                     help='at which index of the timm models list to start')
-parser.add_argument('-hli', '--high_limit', default=32, type=int,
+parser.add_argument('-hli', '--high_limit', default=None, type=int,
                     metavar='N',
                     help='at which index of the timm models list to end')
 parser.add_argument('-lml', '--load-models-list', default='models_lists/imagenet_models_list.txt', type=str,
                     help='Path to file containing a list of models')
-parser.add_argument('-of', '--output-file-path', default='./results/models_comparison.csv', type=str,
+parser.add_argument('-of', '--output-file-path', default='./results/models_comparison/models_comparison.csv', type=str,
                     help='Path to output file')
-parser.add_argument('-sl', '--save-y-scores', default=False, action='store_true',
+parser.add_argument('-sl', '--save-y-scores', default=True, action='store_true',
                     help='save model y_scores to file, overwriting existing files')
 parser.add_argument('-ll', '--load_y_scores', default=True, action='store_true',
                     help='load model y_scores from file')
@@ -176,7 +176,7 @@ def MC_Dropout_Pass(x, model, dropout_iterations=30, classification=True):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 21k to 1k translation code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 from utils import imagenet1K_synsets
 labels_1k = imagenet1K_synsets.imagenet_21_dictionary
-with open("/home/shanigoren/hsc/resources/ImageNet21K_labels") as f:
+with open("./resources/ImageNet21K_labels") as f:
     wordnet_ids_21k = f.read().splitlines()
 numeric_label_by_wordnet_id_21k = {x: i for i, x in enumerate(wordnet_ids_21k)}
 wordnet_id_by_numeric_label_21k = {i: x for i, x in enumerate(wordnet_ids_21k)}
@@ -246,11 +246,11 @@ def extract_model_results(model, dataloader, model_name, forward_pass_function=s
     if load_y_scores_from_file or save_y_scores_to_file:
         save_model_name = model_name.replace('/', '-')
         if temp_scaling:
-            y_scores_file_name = '/home/shanigoren/hsc/resources/models_y_scores/TS/' + save_model_name + '_TS.pt'
-            y_true_file_name = '/home/shanigoren/hsc/resources/models_ground_truth/TS/' + save_model_name  + '_TS.pt'
+            y_scores_file_name = './resources/models_y_scores/TS/' + save_model_name + '_TS.pt'
+            y_true_file_name = './resources/models_ground_truth/TS/' + save_model_name  + '_TS.pt'
         else:
-            y_scores_file_name = '/home/shanigoren/hsc/resources/models_y_scores/' + save_model_name + '.pt'
-            y_true_file_name = '/home/shanigoren/hsc/resources/models_ground_truth/' + save_model_name  + '.pt'
+            y_scores_file_name = './resources/models_y_scores/' + save_model_name + '.pt'
+            y_true_file_name = './resources/models_ground_truth/' + save_model_name  + '.pt'
     all_y_scores = torch.empty((0, 1000))
     if args.inat:
         all_y_scores = torch.empty((0, 10000))
@@ -280,6 +280,8 @@ def extract_model_results(model, dataloader, model_name, forward_pass_function=s
                     else:
                         y_scores = model.forward(x)
 
+                    all_y_scores = torch.vstack((all_y_scores, y_scores.cpu()))
+                    all_y_true = torch.hstack((all_y_true, y.cpu()))
                     accuracy, samples_certainties, total_correct, total_samples = get_certainties_and_correctness(y_scores, y, total_correct, total_samples, samples_certainties, forward_pass_returns_confidence)
 
                     pbar.set_description(f'{pbar_name}. accuracy:{accuracy:.3f}% (Elapsed time:{timer() - timer_start:.3f} sec)')
@@ -516,10 +518,10 @@ def extract_temperature_scaled_metrics(model, transform, valid_size=5000, model_
     return model_results_TS
 
 # TODO: Add description when done coding
-def models_comparison(models_names: list, args, file_name='./results/models_comparison.csv', results_name='model_comparison_results', mc_dropout=False, selective_performance_second_chance=True):
+def models_comparison(models_names: list, args, file_name='./results/models_comparison/models_comparison.csv', results_name='model_comparison_results', mc_dropout=False, selective_performance_second_chance=True):
     failed_models = []
     logger = log_utils.Logger(file_name=file_name, headers=log_utils.headers, overwrite=False)
-    fail_logger = log_utils.Logger(file_name=file_name.rsplit('/', 1)[0] + '/failed_models.csv', headers=['index', 'model_name', 'exception', 'stack_trace'], overwrite=False)
+    fail_logger = log_utils.Logger(file_name=file_name.rsplit('/', 1)[0] + '/results/failed_models.csv', headers=['index', 'model_name', 'exception', 'stack_trace'], overwrite=False)
     results = {}
     skip_no_rc = False
     for i, model_name in enumerate(models_names):
@@ -540,12 +542,13 @@ def models_comparison(models_names: list, args, file_name='./results/models_comp
             saved_model_name = model_name
             saved_results_name = results_name
         # TODO: Add a skip for all models tested on 21k (22k or whatever)
-        existing_results = data_utils.load_pickle(f'./results/ID/{saved_model_name}_results.pkl')
+        existing_results = data_utils.load_pickle(f'./results/models_comparison/ID/{saved_model_name}_results.pkl')
         if args.existing_results and existing_results is None:
             print('no existing results, moving on to the next.')
             continue
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        existing_results = None
         if existing_results is not None:  # We already tested this architecture
             if not is_ensemble:                
                 if 'pytorch' in existing_results['Architecture']:
@@ -555,7 +558,7 @@ def models_comparison(models_names: list, args, file_name='./results/models_comp
                     model, transform = create_model_and_transforms(args, model_name)
                     input_size = extract_image_size_from_transform(transform)
                     existing_results['input size'] = input_size[0]
-                    data_utils.save_pickle(f'./results/ID/{saved_model_name}_results.pkl', existing_results)
+                    data_utils.save_pickle(f'./results/models_comparison/ID/{saved_model_name}_results.pkl', existing_results)
                 
                 if 'Temperature_TS' in existing_results.keys() and 'Temperature' not in existing_results.keys():
                     existing_results['Temperature'] = existing_results['Temperature_TS']
@@ -608,7 +611,7 @@ def models_comparison(models_names: list, args, file_name='./results/models_comp
                     existing_results['Coverage_for_Accuracy_98_nonstrict'] = model_results[f'Coverage_for_Accuracy_98{suffix}']
                     existing_results['Coverage_for_Accuracy_99_nonstrict'] = model_results[f'Coverage_for_Accuracy_99{suffix}']
             logger.log(existing_results)
-            data_utils.save_pickle(f'./results/ID/{saved_model_name}_results.pkl', existing_results)
+            data_utils.save_pickle(f'./results/models_comparison/ID/{saved_model_name}_results.pkl', existing_results)
             results[existing_results['Architecture']] = existing_results
             continue
         ################# done existing results #####################
@@ -672,10 +675,10 @@ def models_comparison(models_names: list, args, file_name='./results/models_comp
                 input_size = extract_image_size_from_transform(transform)
                 model_results['input size'] = input_size[0]
             logger.log(model_results)
-            data_utils.save_pickle(f'./results/ID/{saved_model_name}_results.pkl', model_results)
+            data_utils.save_pickle(f'./results/models_comparison/ID/{saved_model_name}_results.pkl', model_results)
             results[model_name] = model_results
-    # data_utils.save_pickle(f'./results/ID/model_comparison_results.pkl', results)
-    data_utils.save_pickle(f'./results/ID/{saved_results_name}.pkl', results)
+    # data_utils.save_pickle(f'./results/models_comparison/ID/model_comparison_results.pkl', results)
+    data_utils.save_pickle(f'./results/models_comparison/ID/{saved_results_name}.pkl', results)
 
 
 if __name__ == '__main__':
@@ -705,7 +708,7 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(1)
 
-    file_name = './results/models_comparison.csv'
+    file_name = './results/models_comparison/models_comparison.csv'
 
     if args.low_limit is None and args.high_limit is None:
         args.low_limit = 0
@@ -714,7 +717,7 @@ if __name__ == '__main__':
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~ Code to get only the models I've manually chosen for ID ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # TODO: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    csv_file = './results/ID/models_to_check.csv'
+    csv_file = './results/models_comparison/ID/models_to_check.csv'
     try:
         with open(csv_file, mode='r') as infile:
             reader = csv.reader(infile)

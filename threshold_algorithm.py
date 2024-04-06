@@ -28,6 +28,29 @@ from hierarchy.ranking import HierarchyLoss
 import argparse
 from timeit import default_timer as timer
 
+config_parser = parser = argparse.ArgumentParser(description='config', add_help=False)
+parser.add_argument('-lli', '--low-limit', default=None, type=int,
+                    metavar='N',
+                    help='at which index of the timm models list to start')
+parser.add_argument('-hli', '--high-limit', default=None, type=int,
+                    metavar='N',
+                    help='at which index of the timm models list to finish')
+parser.add_argument('-n', '--cal-set-n', default=5000, type=int,
+                    metavar='N',
+                    help='Calibration set size (n). Recommended 5000 for Imagenet, 10000 for iNat21')
+parser.add_argument('-re', '--repeats', default=1000, type=int,
+                    metavar='N',
+                    help='Number of repetitions for each model and alpha value')
+parser.add_argument('-inat', '--inat', default=False, action='store_true',
+                    help='Eval inat models. If false, eval imagenet models')
+parser.add_argument('-rv', '--reverse', default=False, action='store_true',
+                    help='Go over the models in reverse')
+parser.add_argument('-rh', '--rebuild-hier', default=True, action='store_true',
+                    help='Build hierarchy. For first run, set to true and later load it from file.')
+parser.add_argument('-lh', '--load-hier', default=True, action='store_true',
+                    help='Load hierarchy from file.')
+
+
 
 metrics_names = ['accuracy', 'marginal_coverage', 'risk', 'coverage', 'avg_height']
 
@@ -122,27 +145,6 @@ def validation(alg, hierarchy, y_scores_val, y_true_val, opt_result):
 
     return results_rows
 
-config_parser = parser = argparse.ArgumentParser(description='config', add_help=False)
-parser.add_argument('-lli', '--low-limit', default=None, type=int,
-                    metavar='N',
-                    help='at which index of the timm models list to start')
-parser.add_argument('-hli', '--high-limit', default=None, type=int,
-                    metavar='N',
-                    help='at which index of the timm models list to finish')
-parser.add_argument('-n', '--cal-set-n', default=5000, type=int,
-                    metavar='N',
-                    help='Calibration set size (n). Recommended 5000 for Imagenet, 10000 for iNat21')
-parser.add_argument('-re', '--repeats', default=1000, type=int,
-                    metavar='N',
-                    help='Number of repetitions for each model and alpha value')
-parser.add_argument('-inat', '--inat', default=False, action='store_true',
-                    help='Eval inat models. If false, eval imagenet models')
-parser.add_argument('-rv', '--reverse', default=False, action='store_true',
-                    help='Go over the models in reverse')
-parser.add_argument('-rh', '--rebuild-hier', default=False, action='store_true',
-                    help='Build hierarchy. For first run, set to true and later load it from file.')
-parser.add_argument('-lh', '--load-hier', default=True, action='store_true',
-                    help='Load hierarchy from file.')
 
 if __name__ == '__main__':
     args = parser.parse_args()
