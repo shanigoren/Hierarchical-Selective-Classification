@@ -75,7 +75,7 @@ def calc_hier_aurc_and_improvement(rc_curve_df, imp=False):
             risk = risk.replace('risk_','')
             h_aurc_results[f'hAURC_{inf_rule}_{risk}'] = metrics.auc(inf_rule_results['coverage'], inf_rule_results['risk_'+risk])
             if imp and inf_rule not in ['Selective', 'darts'] and 'Selective' in rc_curve_df['inference_rule'].unique():
-                h_aurc_results[f'IMP_hAURC_{inf_rule}_{risk}'] = (h_aurc_results[f'hAURC_{inf_rule}_{risk}'] - h_aurc_results[f'hAURC_selective_{risk}']) \
+                h_aurc_results[f'Gain_{inf_rule}_{risk}'] = (h_aurc_results[f'hAURC_{inf_rule}_{risk}'] - h_aurc_results[f'hAURC_selective_{risk}']) \
                                                                             /h_aurc_results[f'hAURC_selective_{risk}']
     return h_aurc_results
 

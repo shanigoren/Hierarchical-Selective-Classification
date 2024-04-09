@@ -1,15 +1,10 @@
 import os
 
-inference_rules = ['selective', 'climbing', 'jumping', 'maxcoverage', 'darts', 'maxlikelihood', 'maxlikelihood_all']
-threshold_keys = ['opt_theta_' + i for i in inference_rules]
-hAUROC_keys = ['hAUROC_flat'] + ['hAUROC_' + i for i in inference_rules]
-haurc_keys = [f'hAURC_{i}_01' for i in inference_rules] + \
+inference_rules = ['selective', 'climbing', 'jumping', 'maxcoverage']
+hsc_keys = [f'hAURC_{i}_01' for i in inference_rules] + \
              ['hAURC_' + i + '_hier' for i in inference_rules] +\
-             ['IMP_hAURC_' + i + '_01' for i in inference_rules[1:]] +\
-             ['IMP_hAURC_' + i + '_hier' for i in inference_rules[1:]] 
-hAccuracy_keys = ['hAccuracy_flat'] + ['hAccuracy_' + i for i in inference_rules]
-marginal_cov_keys = ['marginal_coverage_' + i for i in inference_rules]
-hsc_keys = threshold_keys + hAUROC_keys + haurc_keys + hAccuracy_keys + marginal_cov_keys 
+             ['Gain_' + i + '_01' for i in inference_rules[1:]] +\
+             ['Gain_' + i + '_hier' for i in inference_rules[1:]] 
 
 headers = ['Architecture', 'Accuracy', 'Accuracy_TS', 'AUROC', 'AUROC_TS', 'ECE_15', 'ECE_15_TS', 'MCE_15', 'MCE_15_TS',
             'Gamma Correlation', 'Gamma Correlation_TS', 'Parameters #', 'AURC', 'AURC_TS',
@@ -25,7 +20,6 @@ headers = ['Architecture', 'Accuracy', 'Accuracy_TS', 'AUROC', 'AUROC_TS', 'ECE_
             'Coverage_for_Accuracy_97_nonstrict', 'Coverage_for_Accuracy_97_TS',
             'Coverage_for_Accuracy_97_nonstrict_TS', 'Coverage_for_Accuracy_96', 'Coverage_for_Accuracy_96_nonstrict',
             'Coverage_for_Accuracy_96_TS', 'Coverage_for_Accuracy_96_nonstrict_TS', 'EAURC', 'EAURC_TS', ] + \
-            ['hCal_leaves', 'hCal_leaves_TS', 'alpha', 'alpha_TS'] + \
             hsc_keys + [k+'_TS' for k in hsc_keys]
 
 class Logger:
